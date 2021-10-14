@@ -1,5 +1,5 @@
-# Teaching
- Codes used for class demonstrations, other fun projects
+# Jack Ramina 
+ Honors By Contract 2021
 
 ## MAT 205 (Linear Algebra)
 
