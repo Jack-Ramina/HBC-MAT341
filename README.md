@@ -1,13 +1,13 @@
 # Jack Ramina 
  Honors By Contract 2021
 
-## MAT 205 (Linear Algebra)
+## Problem of the Week
 
     replace.m
     swap.m
     scale.m
     Codes to practice elementary row operations
-    
+    test test
     visualize_transformation.m
     Visualize effects of 2D linear transformation
     of user defined matrix
@@ -16,12 +16,12 @@
     Visualize images of vectors under 2x2 matrix
     transformation
 
-## MAT 326 (Differential Equations)
+## Simulated Annealing
 
     direction_field.m
     MATLAB code to create direction fields and sample trajectories
 
-## MAT 426 (Partial Differential Equations)
+## Sorting Algorithms
     
     transport_equation.m
     Visualize solutions to homogeneous transport equation
