@@ -14,57 +14,76 @@
 % previous iteration in hopes of bumping the approximate minimum out of a
 % local minimum and down into the global minimum.
 %
-% This is the first iteration of that code that was written and it does not
-% work very well... It will get the job done eventually and it will do it
-% right. The only problem is that it takes way to long to run. The reason
-% for this is that an external script cost_Func was used. This script is
-% called, which is 3 times per iteration for a total of 10500 times. Each
-% time it is called it has to initialize a 1000x1000 matrix. The time it
-% takes to initialize this matrix is minimal, but when it is repeated 10500
-% times it really adds up.
+% This is the second iteration of the code. A number of things were added
+% and edited. The most important was the cost_Func function was removed.
+% Instead of calling the function every time the cost has to be computed
+% and creating the 1000x1000 matrix every time, the 1000x1000 matrix is
+% loaded once at the beginning of the script and the cost is calculated
+% multiple times throughout the script. A few other smaller things were
+% changed as well, which will be discussed in the comments in the code
+% itself.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function simulated_Annealing()
+load('Cost_Matrix.mat')     % Load the cost matrix once at the beginning of the script to minimize run time
+rng(30)
+% Because I am working as part of a team for this project, we all had an
+% rng line with the same value so that we all had the same output and could
+% troubleshoot easier.
 
-% initialzation
-guess = 1:1:1000;   % Starting order of cities
-frac = 7/8;         % How much the temperature decreases by each iteration  
-tol = 10;           % ending temperature
-temp = 1000;        % starting temperature
-k = 0.0001;         % constant used in the exponential step
-max_iter = 100;     % how many times the inner loop runs
-count = 0;          % count variable
+% initialization
+guess = randperm(1000);     % Generate a random route instead of going 1-1000
+frac = 0.9;                 % How much the temperature decreases by each iteration
+tol = 1e-3;                 % ending temperature
+temp = 1e3;                 % starting temperature
+k = 0.01;                   % constant used in the exponential step
+max_iter = 5000;            % how many times the inner loop runs
+count = 0;                  % count variable
 
-while temp > tol                    % keep iterating until the temperature reaches the specified tolerance
-    for i = 1:max_iter              % iterate 100 times
-        count = count + 1;          % increment the count variable once every iteration
-        cost = cost_Func(guess);    % calculate the cost to travel with the current route
+% calculate the cost of a specific route. This snip of code will be used
+% many times throughout the program. This was originally in cost_Func
+cost = 0;   % Rolling sum starting at 0
+for j = 1:length(guess)-1   % iterate over every combination of adjascent cities
+    cost = cost + A(guess(j), guess(j+1));  % Add the cost to travel between those cities to the rolling sum
+end
         
-        % Make a new guess
-        guessTemp = guess;          
-        q = randi(999);         % Pick a random index and swap that one with the one to the right
+while temp > tol            % keep iterating until the temperature reaches the specified tolerance
+    for i = 1:max_iter      % run the inner loop 5000 times
+        count = count + 1;  % increment the count variable once every iteration
+        
+        % make a new guess
+        guessTemp = guess;
+        q = randi(999);         % pick a random index and swap it with the one to the right
         swap = guessTemp(q);
         guessTemp(q) = guessTemp(q+1);
         guessTemp(q+1) = swap;
         
-        newCost = cost_Func(guessTemp);     % calculate the cost of the new guess
-        deltaC = newCost - cost;            % Find the difference between the new and old cost
+        newCost = 0;    % calculate the cost of the new guess
+        for m = 1:length(guessTemp)-1
+            newCost = newCost + A(guessTemp(m),guessTemp(m+1));
+        end
+        deltaC = newCost - cost;    % find the difference between the new and old cost
         
-        if deltaC < 0           % If the cost decreases,
-            guess = guessTemp;  % Then keep the change
+        if deltaC < 0           % If the cost decreases
+            guess = guessTemp;  % keep the new guess
+            cost = newCost;     % replace the cost so it does not need to be recalculated
         else                                % If the cost does not decrease, randomly decide to keep the change anyway
             ex = exp((-deltaC)/(k*temp));   % as the temperature gets lower, it will be less likely to keep the change
             r = rand();                     % If the change in cost is really bigm it will be less likely to keep the change
             if r < ex                       % The reason we sometimes keep the change even if it is worse is because
                 guess = guessTemp;          % we do not want to get stuck in a local minimum.
-            end                             % Ideally the worse cost will kick us out of the minimum we are stuck in so we can
-        end                                 % find the global minimum instead.
+                cost = newCost;             % Ideally the worse cost will kick us out of the minimum we are stuck in so we can
+            end                             % find the global minimum instead.
+        end
         
-        costs(count) = cost_Func(guess);    % store the current cost in a vector
+        costs(count) = cost;    % store the current cost in a vector
+        counts(count) = count;  % store the current count in a vector
     end
-    temp = frac * temp;                     % After iterating 100 times, decrease the temperature
+    temp = frac * temp;         % After iterating 5000 times, decrease the temperature
 end
-costs               % print the cost vector to screen
-guess'              % print the final route to screen
-cost_Func(guess)    % print the final cost to screen
+guess'              % print the final route to the screen
+costs(count)        % print the final cost to the screen
+
+figure(1)
+plot(counts,costs)  % plot the cost as time goes on
