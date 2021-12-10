@@ -14,76 +14,116 @@
 % previous iteration in hopes of bumping the approximate minimum out of a
 % local minimum and down into the global minimum.
 %
-% This is the second iteration of the code. A number of things were added
-% and edited. The most important was the cost_Func function was removed.
-% Instead of calling the function every time the cost has to be computed
-% and creating the 1000x1000 matrix every time, the 1000x1000 matrix is
-% loaded once at the beginning of the script and the cost is calculated
-% multiple times throughout the script. A few other smaller things were
-% changed as well, which will be discussed in the comments in the code
-% itself.
+% In this version, the biggest change was adding a second variable, the
+% distance. Now that we had an optimization scheme for cost alone, we
+% decided to see if we would be able to optimize two variables at the same
+% time. With the second variable, there are a lot more possibilities. One
+% possibility that required an important change was if the cost decreases a
+% lot but the distance increases. We needed to figure out at what point an
+% increase is too much. See the comments in good_Change_Finder for more
+% information on that.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function simulated_Annealing()
-load('Cost_Matrix.mat')     % Load the cost matrix once at the beginning of the script to minimize run time
-rng(30)
+function simulated_Annealing3()
+load('Cost_and_Distance_Matrices.mat')
+B = DistMAT;    % Load the cost and distance matricies. Rename DistMAT to B for consistency
+rng(98435)
 % Because I am working as part of a team for this project, we all had an
 % rng line with the same value so that we all had the same output and could
 % troubleshoot easier.
 
-% initialization
-guess = randperm(1000);     % Generate a random route instead of going 1-1000
-frac = 0.9;                 % How much the temperature decreases by each iteration
+guess = randperm(1000);     % Generate a random route
+frac = 0.95;                % How much the temperature decreases by each iteration
 tol = 1e-3;                 % ending temperature
-temp = 1e3;                 % starting temperature
-k = 0.01;                   % constant used in the exponential step
-max_iter = 5000;            % how many times the inner loop runs
+temp = 1e4;                 % starting temperature
+kC = 0.01;                  % constant used in the exponential step for cost
+kD = 0.01;                  % constant used in the exponential step for distance
+max_iter = 7500;            % how many times the inner loop runs
 count = 0;                  % count variable
 
-% calculate the cost of a specific route. This snip of code will be used
-% many times throughout the program. This was originally in cost_Func
-cost = 0;   % Rolling sum starting at 0
-for j = 1:length(guess)-1   % iterate over every combination of adjascent cities
-    cost = cost + A(guess(j), guess(j+1));  % Add the cost to travel between those cities to the rolling sum
-end
+% These are values that are "Good" or "Bad" changes. If the cost decreases
+% by more than 1.07% and the distance decreases by less than 2.24% we keep
+% the change. These vales come from good_Change_Finder
+GCChange = 1.07;
+BCChange = 1.92;
+GDChange = 1.26;
+BDChange = 2.24;
+
+% cost_Func is no longer obsolete because the matrices A and B can be
+% passed into it instead of initializing them each time they are called
+cost = cost_Func(guess,A); 
+dist = cost_Func(guess,B);
+
+while temp > tol            % While the temperature is greater than the ending value, keep going
+    for i = 1:max_iter      % iterate the inner loop 7500 times
+        count = count + 1;  % increment the counter by one for each iteration
         
-while temp > tol            % keep iterating until the temperature reaches the specified tolerance
-    for i = 1:max_iter      % run the inner loop 5000 times
-        count = count + 1;  % increment the count variable once every iteration
-        
-        % make a new guess
-        guessTemp = guess;
+        guessTemp = guess;      % make a new guess
         q = randi(999);         % pick a random index and swap it with the one to the right
         swap = guessTemp(q);
         guessTemp(q) = guessTemp(q+1);
         guessTemp(q+1) = swap;
         
-        newCost = 0;    % calculate the cost of the new guess
-        for m = 1:length(guessTemp)-1
-            newCost = newCost + A(guessTemp(m),guessTemp(m+1));
-        end
-        deltaC = newCost - cost;    % find the difference between the new and old cost
+        newCost = cost_Func(guessTemp,A);   % find the new cost, change in cost, and ratio of change/original
+        deltaC = newCost - cost;
+        costRat = abs(deltaC/cost) * 100;
+        newDist = cost_Func(guessTemp,B);   % do the same for distance
+        deltaD = newDist - dist;
+        distRat = abs(deltaD/dist) * 100;
         
-        if deltaC < 0           % If the cost decreases
-            guess = guessTemp;  % keep the new guess
-            cost = newCost;     % replace the cost so it does not need to be recalculated
-        else                                % If the cost does not decrease, randomly decide to keep the change anyway
-            ex = exp((-deltaC)/(k*temp));   % as the temperature gets lower, it will be less likely to keep the change
-            r = rand();                     % If the change in cost is really bigm it will be less likely to keep the change
-            if r < ex                       % The reason we sometimes keep the change even if it is worse is because
-                guess = guessTemp;          % we do not want to get stuck in a local minimum.
-                cost = newCost;             % Ideally the worse cost will kick us out of the minimum we are stuck in so we can
-            end                             % find the global minimum instead.
+        if deltaC < 0 && deltaD < 0     % if both the cost and distance decrease
+            guess = guessTemp;          % keep the change
+            cost = newCost;
+            dist = newDist;
+        elseif deltaC < 0 && costRat > GCChange && distRat < BDChange
+% if the cost decreases by a substantial amount, and the distance does not
+% increase by a substantial amount, keep the change
+            guess = guessTemp;
+            cost = newCost;
+            dist = newDist;
+        elseif deltaD < 0 && distRat > GDChange && costRat < BCChange
+% if the distance decreases by a substantial amount, and the cost does not
+% increase by a substantial amount, keep the change
+            guess = guessTemp;
+            cost = newCost;
+            dist = newDist;
+        else    % if none of these conditions are met, randomly decide to keep the change using simulated annealing
+            exc = exp((-deltaC)/(kC*temp));     % as the temperature gets lower, it will be less likely to keep the change
+            exd = exp((-deltaD)/(kD*temp));     % If the change is really big it will be less likely to keep the change
+            rc = rand();                        % The reason we sometimes keep the change even if it is worse is because
+            rd = rand();                        % we do not want to get stuck in a local minimum.
+            if deltaC > 0 && rc < exc           % Ideally the worse cost or distance will kick us out of the minimum we are
+                guess = guessTemp;              % stuck in so we can find the global minimum instead.
+                cost = newCost;
+                dist = newDist;
+            elseif deltaD > 0 && rd < exd
+                guess = guessTemp;
+                cost = newCost;
+                dist = newDist;
+            end
         end
         
-        costs(count) = cost;    % store the current cost in a vector
-        counts(count) = count;  % store the current count in a vector
+        costs(count) = cost;            % store the current cost in a vector
+        dists(count) = dist;            % store the current distance in a vector
+        counts(count) = count;          % store the count in a vector so it can be used to help plot
+        total(count) = cost + dist;     % store the sum of cost and distance in a vector
     end
-    temp = frac * temp;         % After iterating 5000 times, decrease the temperature
+    temp = frac * temp;     % after iterating 7500 times, decreases the temperature
 end
-guess'              % print the final route to the screen
-costs(count)        % print the final cost to the screen
+guess'                          % print the final route to the screen
+finalCost = cost_Func(guess,A)  % print the final cost to the screen
+finalDist = cost_Func(guess,B)  % print the final distance to the screen
+tot = finalDist + finalCost     % print the sum of cost and distance to the screen
 
-figure(1)
-plot(counts,costs)  % plot the cost as time goes on
+figure(1)   % plot cost and distance over each iteration
+plot(counts,costs,'color','red'); hold on
+plot(counts,dists,'color','blue'); hold off
+legend('Cost','Distance')
+xlabel('Iteration Number')
+ylabel('Cost or Distance')
+
+figure(2)   % plot the sum of the cost and distance over each iteration
+plot(counts,total,'color','green','Linewidth',5)
+xlabel('Iteration Number')
+ylabel('Cost + Distance')
