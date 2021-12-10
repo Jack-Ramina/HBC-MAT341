@@ -31,12 +31,12 @@
     Sorting algorithms have always interested me ever since I saw the sorting algorithm visualizations on
     the internet. I felt that I had the skill to code a few of them. Before I started researching, bogo
     sort was my favorite because it randomizes the data until it is sorted. After all of these were
-    finished, radix sort became my favorite because it does not use and comparisons.
+    finished, radix sort became my favorite because it does not use any comparisons.
 
     bogo_Sort.m randomizes the range until it is sorted.
     bubble_Sort.m repeatedly sorts each pair of neighboring numbers until the range is sorted
-    insertion_Call.m moves smaller values left until they are in the proper position relative to neighbors
-    insertion_Sort.m finds the smallest value and moves it to the left until the range is sorted
+    insertion_Call.m uses the insertion sort algorithm in the quicksort algorithm
+    insertion_Sort.m moves smaller values left until they are in the proper position relative to neighbors
     quick_Sort.m organizes the range into smaller sections then sorts each section using insertion sort
         and finally puts the sections back together
     radix_sort.m sorts by each digit in the numbers starting at 1s and ending at the starting digit
