@@ -43,7 +43,7 @@ max_iter = 7500;            % how many times the inner loop runs
 count = 0;                  % count variable
 
 % These are values that are "Good" or "Bad" changes. If the cost decreases
-% by more than 1.07% and the distance decreases by less than 2.24% we keep
+% by more than 1.07% and the distance increases by less than 2.24% we keep
 % the change. These vales come from good_Change_Finder
 GCChange = 1.07;
 BCChange = 1.92;
