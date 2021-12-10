@@ -11,9 +11,9 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-function [costRatN,distRatN,costRatP,distRatP] = good_Change_Finder()
+function [goodCost,badCost,goodDist,badDist] = good_Change_Finder()
 load('Cost_and_Distance_Matrices.mat')
-rng(862379) % I chose this seed because it gave at least 25000 in each vector
+rng(862379) 
 v = randperm(1000);             % generate starting route
 cost = cost_Func(v,A);          % starting cost
 dist = cost_Func(v,DistMAT);    % starting function
@@ -45,6 +45,8 @@ for i = 1:100000        % iterate 100000 times
         distRatP(pdc) = deltaD/cost * 100;  % and positive distance changes
         pdc = pdc + 1;
     end
+    cost = newCost; % Set the old cost to the new cost so that each iteration we get the ratio to the previous cost, not the
+    dist = newDist; % very first cost (and distance)
 end
 
 costRatN = sort(costRatN,'descend');    % sort so biggest negative changes are at the bottom of the vector
@@ -57,23 +59,31 @@ b = 1:1:length(distRatN);
 c = 1:1:length(costRatP);
 d = 1:1:length(distRatP);
 
-figure(1)           % Plot each sorted ratio vector
-plot(a,costRatN)
-
-figure(2)
-plot(b,distRatN)
-
-figure(3)
-plot(c,costRatP)
+figure(3)           % Plot each sorted ratio vector and a line at the chosen cutoff percentage
+plot(a,costRatN); hold on
+xline(length(costRatN) - ceil(length(costRatN)) * .33); hold off
+title('Good change in cost')
 
 figure(4)
-plot(d,distRatP)
+plot(b,distRatN); hold on
+xline(length(distRatN) - ceil(length(distRatN)) * .25); hold off
+title('Good change in distance')
+
+figure(5)
+plot(c,costRatP); hold on
+xline(length(costRatP) - ceil(length(costRatP)) * .25); hold off
+title('Bad change in cost')
+
+figure(6)
+plot(d,distRatP); hold on
+xline(length(distRatP) - ceil(length(distRatP)) * .1); hold off
+title('Bad change in distance')
 
 % Suppose we want the top 33% of cost decreases to count as "good." We take
 % the length of the vector and subtract 33% of that. The value at that
 % index will be the cutoff point. Anything below that point will be not big
 % enough and anything above will be big enough.
-goodCost = costRatN(length(costRatN) - ceil(length(costRatN) * 0.33))
-goodDist = distRatN(length(distRatN) - ceil(length(distRatN) * 0.25))
-badCost  = costRatP(length(costRatP) - ceil(length(costRatP) * 0.25))
-badDist  = distRatP(length(distRatP) - ceil(length(distRatP) * 0.1))
+goodCost = costRatN(length(costRatN) - ceil(length(costRatN) * 0.33));
+goodDist = distRatN(length(distRatN) - ceil(length(distRatN) * 0.25));
+badCost  = costRatP(length(costRatP) - ceil(length(costRatP) * 0.1));
+badDist  = distRatP(length(distRatP) - ceil(length(distRatP) * 0.1));

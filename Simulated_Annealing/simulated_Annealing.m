@@ -42,13 +42,10 @@ kD = 0.01;                  % constant used in the exponential step for distance
 max_iter = 7500;            % how many times the inner loop runs
 count = 0;                  % count variable
 
-% These are values that are "Good" or "Bad" changes. If the cost decreases
-% by more than 1.07% and the distance decreases by less than 2.24% we keep
-% the change. These vales come from good_Change_Finder
-GCChange = 1.07;
-BCChange = 1.92;
-GDChange = 1.26;
-BDChange = 2.24;
+% Pull "good" and "bad" changes in cost and distance from the
+% good_Change_finder script. These will be used when one change is negative
+% and one change is positive
+[GCChange, BCChange, GDChange, BDChange] = good_Change_Finder();
 
 % cost_Func is no longer obsolete because the matrices A and B can be
 % passed into it instead of initializing them each time they are called
@@ -122,8 +119,10 @@ plot(counts,dists,'color','blue'); hold off
 legend('Cost','Distance')
 xlabel('Iteration Number')
 ylabel('Cost or Distance')
+title('Cost and Distance over each iteration')
 
 figure(2)   % plot the sum of the cost and distance over each iteration
-plot(counts,total,'color','green','Linewidth',5)
+plot(counts,total,'color','green')
 xlabel('Iteration Number')
 ylabel('Cost + Distance')
+title('Sum of Cost and Distance over each iteration')
